@@ -82,6 +82,13 @@ public class SettingsViewModel : ViewModel
         set => SetProperty(ref _aesEndpoint, value);
     }
 
+    private string _selectedMapping;
+    public string SelectedMapping
+    {
+        get => _selectedMapping;
+        set => SetProperty(ref _selectedMapping, value);
+    }
+
     private FEndpoint _mappingEndpoint;
     public FEndpoint MappingEndpoint
     {
@@ -183,6 +190,7 @@ public class SettingsViewModel : ViewModel
     private EGame _ueGameSnapshot;
     private List<FCustomVersion> _customVersionsSnapshot;
     private Dictionary<string, bool> _optionsSnapshot;
+    private string _mappingSnapshot;
     private ELanguage _assetLanguageSnapshot;
     private ECompressedAudio _compressedAudioSnapshot;
     private EIconStyle _cosmeticStyleSnapshot;
@@ -215,12 +223,14 @@ public class SettingsViewModel : ViewModel
             _ueGameSnapshot = settings.OverridedGame;
             _customVersionsSnapshot = settings.OverridedCustomVersions;
             _optionsSnapshot = settings.OverridedOptions;
+            _mappingSnapshot = settings.MappingFile;
         }
         else
         {
             _ueGameSnapshot = UserSettings.Default.OverridedGame[_game];
             _customVersionsSnapshot = UserSettings.Default.OverridedCustomVersions[_game];
             _optionsSnapshot = UserSettings.Default.OverridedOptions[_game];
+            _mappingSnapshot = null;
         }
 
         if (UserSettings.Default.CustomEndpoints.TryGetValue(_game, out var endpoints))
@@ -248,6 +258,7 @@ public class SettingsViewModel : ViewModel
         SelectedUeGame = _ueGameSnapshot;
         SelectedCustomVersions = _customVersionsSnapshot;
         SelectedOptions = _optionsSnapshot;
+        SelectedMapping = _mappingSnapshot;
         SelectedAssetLanguage = _assetLanguageSnapshot;
         SelectedCompressedAudio = _compressedAudioSnapshot;
         SelectedCosmeticStyle = _cosmeticStyleSnapshot;
@@ -344,6 +355,7 @@ public class SettingsViewModel : ViewModel
             UserSettings.Default.ManualGames[UserSettings.Default.GameDirectory].OverridedGame = SelectedUeGame;
             UserSettings.Default.ManualGames[UserSettings.Default.GameDirectory].OverridedCustomVersions = SelectedCustomVersions;
             UserSettings.Default.ManualGames[UserSettings.Default.GameDirectory].OverridedOptions = SelectedOptions;
+            UserSettings.Default.ManualGames[UserSettings.Default.GameDirectory].MappingFile = SelectedMapping;
         }
         else
         {

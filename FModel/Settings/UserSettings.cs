@@ -409,6 +409,13 @@ namespace FModel.Settings
             set => SetProperty(ref _customEndpoints, value);
         }
 
+        private IDictionary<string, string> _mappingFile = new Dictionary<string, string>();
+        public IDictionary<string, string> MappingFile
+        {
+            get => _mappingFile;
+            set => SetProperty(ref _mappingFile, value);
+        }
+
         private IDictionary<FGame, IList<CustomDirectory>> _customDirectories = new Dictionary<FGame, IList<CustomDirectory>>
         {
             {FGame.Unknown, new List<CustomDirectory>()},
