@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Numerics;
 using System.Threading;
 using System.Windows;
@@ -64,7 +65,7 @@ public class Renderer : IDisposable
         if (!Options.TryGetModel(out var model) || !Options.TryGetSection(model, out var section)) return;
 
         model.Materials[section.MaterialIndex].SwapMaterial(unrealMaterial);
-        Application.Current.Dispatcher.Invoke(() => model.Materials[section.MaterialIndex].Setup(Options, model.NumTexCoords));
+        Application.Current.Dispatcher.Invoke(() => model.Materials[section.MaterialIndex].Setup(Options, model.UvCount));
         Options.SwapMaterial(false);
     }
 
@@ -99,7 +100,7 @@ public class Renderer : IDisposable
         if (ShowSkybox) _skybox.Render(viewMatrix, projMatrix);
         if (ShowGrid) _grid.Render(viewMatrix, projMatrix, cam.Near, cam.Far);
 
-        _shader.Render(viewMatrix, cam.Position, cam.Direction, projMatrix);
+        _shader.Render(viewMatrix, cam.Position, projMatrix);
         for (int i = 0; i < 6; i++)
             _shader.SetUniform($"bVertexColors[{i}]", i == VertexColor);
 
@@ -258,27 +259,40 @@ public class Renderer : IDisposable
         else if (m.TryConvert(out var mesh))
         {
             model = new Model(m, mesh, t);
-            if (actor.TryGetAllValues(out FPackageIndex[] textureData, "TextureData"))
+            if (actor.TryGetValue(out FPackageIndex baseMaterial, "BaseMaterial") &&
+                actor.TryGetAllValues(out FPackageIndex[] textureData, "TextureData"))
             {
-                for (int j = 0; j < textureData.Length; j++)
+                var material = model.Materials.FirstOrDefault(x => x.Name == baseMaterial.Name);
+                if (material is { IsUsed: true })
                 {
-                    if (!model.Materials[model.Sections[j].MaterialIndex].IsUsed ||
-                        textureData[j].Load() is not { } textureDataIdx)
-                        continue;
+                    for (int j = 0; j < textureData.Length; j++)
+                    {
+                        if (textureData[j]?.Load() is not { } textureDataIdx)
+                            continue;
 
-                    if (textureDataIdx.TryGetValue(out FPackageIndex overrideMaterial, "OverrideMaterial") &&
-                        overrideMaterial.TryLoad(out var material) && material is UMaterialInterface unrealMaterial)
-                        model.Materials[model.Sections[j].MaterialIndex].SwapMaterial(unrealMaterial);
+                        if (textureDataIdx.TryGetValue(out FPackageIndex overrideMaterial, "OverrideMaterial") &&
+                            overrideMaterial.TryLoad(out var oMaterial) && oMaterial is UMaterialInterface oUnrealMaterial)
+                            material.SwapMaterial(oUnrealMaterial);
 
-                    if (textureDataIdx.TryGetValue(out FPackageIndex diffuse, "Diffuse") &&
-                        diffuse.Load() is UTexture2D diffuseTexture)
-                        model.Materials[model.Sections[j].MaterialIndex].Parameters.Textures["Diffuse"] = diffuseTexture;
-                    if (textureDataIdx.TryGetValue(out FPackageIndex normal, "Normal") &&
-                        normal.Load() is UTexture2D normalTexture)
-                        model.Materials[model.Sections[j].MaterialIndex].Parameters.Textures["Normals"] = normalTexture;
-                    if (textureDataIdx.TryGetValue(out FPackageIndex specular, "Specular") &&
-                        specular.Load() is UTexture2D specularTexture)
-                        model.Materials[model.Sections[j].MaterialIndex].Parameters.Textures["SpecularMasks"] = specularTexture;
+                        WorldTextureData(material, textureDataIdx, "Diffuse", j switch
+                        {
+                            0 => "Diffuse",
+                            > 0 => $"Diffuse_Texture_{j + 1}",
+                            _ => CMaterialParams2.FallbackDiffuse
+                        });
+                        WorldTextureData(material, textureDataIdx, "Normal", j switch
+                        {
+                            0 => "Normals",
+                            > 0 => $"Normals_Texture_{j + 1}",
+                            _ => CMaterialParams2.FallbackNormals
+                        });
+                        WorldTextureData(material, textureDataIdx, "Specular", j switch
+                        {
+                            0 => "SpecularMasks",
+                            > 0 => $"SpecularMasks_{j + 1}",
+                            _ => CMaterialParams2.FallbackNormals
+                        });
+                    }
                 }
             }
             if (staticMeshComp.TryGetValue(out FPackageIndex[] overrideMaterials, "OverrideMaterials"))
@@ -305,6 +319,12 @@ public class Renderer : IDisposable
         {
             Options.Lights.Add(new SpotLight(guid, Options.Icons["spotlight"], sl1, sl2, t.Position));
         }
+    }
+
+    private void WorldTextureData(Material material, UObject textureData, string name, string key)
+    {
+        if (textureData.TryGetValue(out FPackageIndex package, name) && package.Load() is UTexture2D texture)
+            material.Parameters.Textures[key] = texture;
     }
 
     private void AdditionalWorlds(UObject actor, Matrix4x4 relation, CancellationToken cancellationToken)

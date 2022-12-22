@@ -1,4 +1,4 @@
-#version 330 core
+#version 460 core
 
 #define PI 3.1415926535897932384626433832795
 #define MAX_UV_COUNT 8
@@ -42,19 +42,42 @@ struct Parameters
     AoParams Ao;
     bool HasAo;
 
+    vec4 EmissiveRegion;
     float Specular;
     float Roughness;
     float EmissiveMult;
     float UVScale;
 };
 
-struct Light {
+struct BaseLight
+{
     vec4 Color;
     vec3 Position;
     float Intensity;
+};
 
-    vec2 Direction;
-    float ConeAngle;
+//struct PointLight
+//{
+//    BaseLight Light;
+//
+//    float Linear;
+//    float Quadratic;
+//};
+//
+//struct SpotLight
+//{
+//    BaseLight Light;
+//
+//    float InnerConeAngle;
+//    float OuterConeAngle;
+//    float Attenuation;
+//};
+
+struct Light {
+    BaseLight Base;
+
+    float InnerConeAngle;
+    float OuterConeAngle;
     float Attenuation;
 
     float Linear;
@@ -66,22 +89,31 @@ struct Light {
 uniform Parameters uParameters;
 uniform Light uLights[MAX_LIGHT_COUNT];
 uniform int uNumLights;
-uniform int uNumTexCoords;
+uniform int uUvCount;
 uniform bool uHasVertexColors;
-uniform vec3 uViewPos;
-uniform vec3 uViewDir;
 uniform bool bVertexColors[6];
+uniform vec3 uViewPos;
 
 out vec4 FragColor;
 
 int LayerToIndex()
 {
-    return clamp(int(fTexLayer), 0, uNumTexCoords - 1);
+    return clamp(int(fTexLayer), 0, uUvCount - 1);
+}
+
+vec2 ScaledTexCoords()
+{
+    return fTexCoords * uParameters.UVScale;
+}
+
+vec4 SamplerToVector(sampler2D s, vec2 coords)
+{
+    return texture(s, coords);
 }
 
 vec4 SamplerToVector(sampler2D s)
 {
-    return texture(s, fTexCoords * uParameters.UVScale);
+    return SamplerToVector(s, ScaledTexCoords());
 }
 
 vec3 ComputeNormals(int layer)
@@ -117,17 +149,16 @@ float geomSmith(float roughness, float dp)
     return dp / denom;
 }
 
-vec3 CalcCameraLight(int layer, vec3 normals)
+vec3 CalcLight(int layer, vec3 normals, vec3 position, vec3 color, float attenuation, bool global)
 {
     vec3 fLambert = SamplerToVector(uParameters.Diffuse[layer].Sampler).rgb * uParameters.Diffuse[layer].Color.rgb;
     vec3 specular_masks = SamplerToVector(uParameters.SpecularMasks[layer].Sampler).rgb;
     float roughness = max(0.0f, specular_masks.b * uParameters.Roughness);
 
-    vec3 intensity = vec3(1.0f) * 1.0;
-    vec3 l = -uViewDir;
+    vec3 l = normalize(uViewPos - fPos);
 
     vec3 n = normals;
-    vec3 v = normalize(uViewPos - fPos);
+    vec3 v = normalize(position - fPos);
     vec3 h = normalize(v + l);
 
     float nDotH = max(dot(n, h), 0.0);
@@ -145,8 +176,43 @@ vec3 CalcCameraLight(int layer, vec3 normals)
     float specBrdfDenom = 4.0 * nDotV * nDotL + 0.0001;
     vec3 specBrdf = uParameters.Specular * specular_masks.r * specBrdfNom / specBrdfDenom;
 
-    vec3 diffuseBrdf = kD * fLambert / PI;
-    return (diffuseBrdf + specBrdf) * intensity * nDotL;
+    vec3 diffuseBrdf = fLambert;
+    if (!global) diffuseBrdf = kD * fLambert / PI;
+    return (diffuseBrdf + specBrdf) * color * nDotL * attenuation;
+}
+
+vec3 CalcBaseLight(int layer, vec3 normals, BaseLight base, float attenuation, bool global)
+{
+    return CalcLight(layer, normals, base.Position, base.Color.rgb * base.Intensity, attenuation, global);
+}
+
+vec3 CalcPointLight(int layer, vec3 normals, Light light)
+{
+    float distanceToLight = length(light.Base.Position - fPos);
+    float attenuation = 1.0 / (1.0 + light.Linear * distanceToLight + light.Quadratic * pow(distanceToLight, 2));
+    return CalcBaseLight(layer, normals, light.Base, attenuation, true);
+}
+
+vec3 CalcSpotLight(int layer, vec3 normals, Light light)
+{
+    vec3 v = normalize(light.Base.Position - fPos);
+    float inner = cos(radians(light.InnerConeAngle));
+    float outer = cos(radians(light.OuterConeAngle));
+
+    float distanceToLight = length(light.Base.Position - fPos);
+    float theta = dot(v, normalize(-vec3(0, -1, 0)));
+    float epsilon = inner - outer;
+    float attenuation = 1.0 / (1.0 + light.Attenuation * pow(distanceToLight, 2));
+    light.Base.Intensity *= smoothstep(0.0, 1.0, (theta - outer) / epsilon);
+
+    if(theta > outer)
+    {
+        return CalcBaseLight(layer, normals, light.Base, attenuation, true);
+    }
+    else
+    {
+        return vec3(0.0);
+    }
 }
 
 void main()
@@ -185,34 +251,35 @@ void main()
             result = mix(result * m.r * uParameters.Ao.AmbientOcclusion, result, m.g);
         }
 
-        vec4 emissive = SamplerToVector(uParameters.Emissive[layer].Sampler);
-        result += uParameters.Emissive[layer].Color.rgb * emissive.rgb * uParameters.EmissiveMult;
+        vec2 coords = ScaledTexCoords();
+        if (coords.x > uParameters.EmissiveRegion.x &&
+            coords.y > uParameters.EmissiveRegion.y &&
+            coords.x < uParameters.EmissiveRegion.z &&
+            coords.y < uParameters.EmissiveRegion.w)
+        {
+            coords.x -= uParameters.EmissiveRegion.x;
+            coords.y -= uParameters.EmissiveRegion.y;
+            coords.x *= 1.0 / (uParameters.EmissiveRegion.z - uParameters.EmissiveRegion.x);
+            coords.y *= 1.0 / (uParameters.EmissiveRegion.w - uParameters.EmissiveRegion.y);
+            vec4 emissive = SamplerToVector(uParameters.Emissive[layer].Sampler, coords);
+            result += uParameters.Emissive[layer].Color.rgb * emissive.rgb * uParameters.EmissiveMult;
+        }
 
         if (!bVertexColors[1])
         {
-            result += CalcCameraLight(layer, normals);
+            result += CalcLight(layer, normals, uViewPos, vec3(0.75), 1.0, false);
 
             vec3 lights = vec3(uNumLights > 0 ? 0 : 1);
             for (int i = 0; i < uNumLights; i++)
             {
-                float attenuation = 0.0;
-                float distanceToLight = length(uLights[i].Position - fPos);
-
                 if (uLights[i].Type == 0)
                 {
-                    attenuation = 1.0 / (1.0 + uLights[i].Linear * distanceToLight + uLights[i].Quadratic * pow(distanceToLight, 2));
+                    lights += CalcPointLight(layer, normals, uLights[i]);
                 }
                 else if (uLights[i].Type == 1)
                 {
-                    float theta = dot(normalize(uLights[i].Position - fPos), normalize(-vec3(uLights[i].Direction.x, -uLights[i].Attenuation, uLights[i].Direction.y)));
-                    if(theta > uLights[i].ConeAngle)
-                    {
-                        attenuation = 1.0 / (1.0 + uLights[i].Attenuation * pow(distanceToLight, 2));
-                    }
+                    lights += CalcSpotLight(layer, normals, uLights[i]);
                 }
-
-                vec3 intensity = uLights[i].Color.rgb * uLights[i].Intensity;
-                lights += result * intensity * attenuation;
             }
             result *= lights; // use * to darken the scene, + to lighten it
         }
