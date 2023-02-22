@@ -89,6 +89,10 @@ public class Material : IDisposable
                 Normals = FillTextures(options, uvCount, Parameters.HasTopNormals, CMaterialParams2.Normals, CMaterialParams2.FallbackNormals);
                 SpecularMasks = FillTextures(options, uvCount, Parameters.HasTopSpecularMasks, CMaterialParams2.SpecularMasks, CMaterialParams2.FallbackSpecularMasks);
                 Emissive = FillTextures(options, uvCount, true, CMaterialParams2.Emissive, CMaterialParams2.FallbackEmissive);
+                if (Emissive[0] != null && Emissive[0].Name.Equals("VFX_T_Burnt_E"))
+                {
+                    Emissive[0] = new Texture(new FLinearColor(0f, 0f, 0f, 0f));
+                }
             }
 
             {   // colors
