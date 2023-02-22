@@ -76,12 +76,12 @@ public partial class MainWindow
             _discordHandler.Initialize(_applicationView.CUE4Parse.Game);
 
 #if DEBUG
-        await _threadWorkerView.Begin(cancellationToken =>
-            _applicationView.CUE4Parse.Extract(cancellationToken,
-                "fortnitegame/Content/Characters/Player/Male/Medium/Bodies/M_Med_Soldier_04/Meshes/SK_M_Med_Soldier_04.uasset"));
-        await _threadWorkerView.Begin(cancellationToken =>
-            _applicationView.CUE4Parse.Extract(cancellationToken,
-                "fortnitegame/Content/Animation/Game/MainPlayer/Emotes/Basketball_Tricks/Basketball_Tricks_Loop_CMM_M.uasset"));
+        //await _threadWorkerView.Begin(cancellationToken =>
+        //    _applicationView.CUE4Parse.Extract(cancellationToken,
+        //        "fortnitegame/Content/Characters/Player/Male/Medium/Bodies/M_Med_Soldier_04/Meshes/SK_M_Med_Soldier_04.uasset"));
+        //await _threadWorkerView.Begin(cancellationToken =>
+        //    _applicationView.CUE4Parse.Extract(cancellationToken,
+        //        "fortnitegame/Content/Animation/Game/MainPlayer/Emotes/Basketball_Tricks/Basketball_Tricks_Loop_CMM_M.uasset"));
 #endif
     }
 
