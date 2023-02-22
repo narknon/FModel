@@ -85,11 +85,11 @@ public class Material : IDisposable
         else
         {
             {   // textures
-                Diffuse = FillTextures(options, uvCount, Parameters.HasTopDiffuse, CMaterialParams2.Diffuse, CMaterialParams2.FallbackDiffuse, true);
-                Normals = FillTextures(options, uvCount, Parameters.HasTopNormals, CMaterialParams2.Normals, CMaterialParams2.FallbackNormals);
+                Diffuse = FillTextures(options, uvCount, Parameters.HasTopDiffuse, CMaterialParams2.Diffuse, CMaterialParams2.FallbackDiffuse, true, "VFX_T_Burnt_D");
+                Normals = FillTextures(options, uvCount, Parameters.HasTopNormals, CMaterialParams2.Normals, CMaterialParams2.FallbackNormals, exception : "VFX_T_Burnt_N");
                 SpecularMasks = FillTextures(options, uvCount, Parameters.HasTopSpecularMasks, CMaterialParams2.SpecularMasks, CMaterialParams2.FallbackSpecularMasks);
-                Emissive = FillTextures(options, uvCount, true, CMaterialParams2.Emissive, CMaterialParams2.FallbackEmissive);
-                if (Emissive[0] != null && Emissive[0].Name.Equals("VFX_T_Burnt_E")) Emissive[0] = new Texture(new FLinearColor());
+                Emissive = FillTextures(options, uvCount, true, CMaterialParams2.Emissive, CMaterialParams2.FallbackEmissive, exception : "VFX_T_Burnt_E");
+                //if (Emissive[0] != null && Emissive[0].Name.Equals("VFX_T_Burnt_E")) Emissive[0] = new Texture(new FLinearColor());
 
             }
 
@@ -143,7 +143,7 @@ public class Material : IDisposable
     /// <param name="triggers">list of texture parameter names by uv channel</param>
     /// <param name="fallback">fallback texture name to use if no top texture found</param>
     /// <param name="first">if no top texture, no fallback texture, then use the first texture found</param>
-    private Texture[] FillTextures(Options options, int uvCount, bool top, IReadOnlyList<string[]> triggers, string fallback, bool first = false)
+    private Texture[] FillTextures(Options options, int uvCount, bool top, IReadOnlyList<string[]> triggers, string fallback, bool first = false, string exception = null)
     {
         UTexture2D original;
         Texture transformed;
@@ -154,7 +154,7 @@ public class Material : IDisposable
         {
             for (int i = 0; i < textures.Length; i++)
             {
-                if (Parameters.TryGetTexture2d(out original, triggers[i]) && options.TryGetTexture(original, fix, out transformed))
+                if (Parameters.TryGetTexture2d(out original, exception, triggers[i]) && options.TryGetTexture(original, fix, out transformed))
                     textures[i] = transformed;
                 else if (i > 0 && textures[i - 1] != null)
                     textures[i] = textures[i - 1];
