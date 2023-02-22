@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using FModel.Framework;
 using FModel.Services;
 
@@ -32,7 +32,8 @@ public class GoToCommand : ViewModelCommand<CustomDirectoriesViewModel>
         {
             foreach (var folder in root)
             {
-                if (!folder.Header.Equals(folders[i], i == 0 ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
+                //if (!folder.Header.Equals(folders[i], i == 0 ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal))
+                if (!folder.Header.Equals(folders[i], StringComparison.Ordinal))
                     continue;
 
                 folder.IsExpanded = true; // folder found = expand

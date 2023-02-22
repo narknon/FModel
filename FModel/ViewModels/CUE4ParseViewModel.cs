@@ -186,7 +186,7 @@ public class CUE4ParseViewModel : ViewModel
                     }
                     default:
                     {
-                        Provider = new DefaultFileProvider(gameDirectory, SearchOption.AllDirectories, true, versions);
+                        Provider = new DefaultFileProvider(gameDirectory, SearchOption.AllDirectories, false, versions);
                         break;
                     }
                 }
