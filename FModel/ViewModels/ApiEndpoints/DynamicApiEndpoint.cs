@@ -1,4 +1,5 @@
-﻿using System.Linq;
+using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using FModel.Extensions;
@@ -59,6 +60,7 @@ public class DynamicApiEndpoint : AbstractApiProvider
 
     public MappingsResponse[] GetMappings(CancellationToken token, string url, string path)
     {
+        if (string.IsNullOrEmpty(url)) return Array.Empty<MappingsResponse>();
         return GetMappingsAsync(token, url, path).GetAwaiter().GetResult();
     }
 

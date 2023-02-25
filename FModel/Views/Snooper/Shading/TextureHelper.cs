@@ -1,4 +1,4 @@
-﻿using CUE4Parse.UE4.Assets.Exports.Texture;
+using CUE4Parse.UE4.Assets.Exports.Texture;
 
 namespace FModel.Views.Snooper.Shading;
 
@@ -21,6 +21,7 @@ public static class TextureHelper
             // B: Metallic
             case "hk_project":
             case "cosmicshake":
+            case "phoenix":
             {
                 unsafe
                 {

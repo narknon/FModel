@@ -99,6 +99,7 @@ public class GameSelectorViewModel : ViewModel
 
     private IEnumerable<DetectedGame> EnumerateDetectedGames()
     {
+        yield return GetSteamGame(990080, "\\Phoenix"); // Hogwarts Legacy
         yield return GetUnrealEngineGame("Fortnite");
         yield return new DetectedGame { GameName = "Fortnite [LIVE]", GameDirectory = Constants._FN_LIVE_TRIGGER };
         yield return GetUnrealEngineGame("Pewee");
