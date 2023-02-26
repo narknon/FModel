@@ -12,10 +12,10 @@
         Width="{Binding Source={x:Static SystemParameters.MaximizedPrimaryScreenWidth}, Converter={converters:RatioConverter}, ConverterParameter='0.75'}">
     <adonisControls:AdonisWindow.Style>
         <Style TargetType="adonisControls:AdonisWindow" BasedOn="{StaticResource {x:Type adonisControls:AdonisWindow}}" >
-            <Setter Property="Title" Value="FModel" />
+            <Setter Property="Title" Value="FModel for Hogwarts Legacy" />
             <Style.Triggers>
                 <DataTrigger Binding="{Binding DataContext.TitleExtra, RelativeSource={RelativeSource Self}, Converter={x:Static converters:IsNullToBoolReversedConverter.Instance}}" Value="True">
-                    <Setter Property="Title" Value="{Binding DataContext.TitleExtra, RelativeSource={RelativeSource Self}, StringFormat={}FModel {0}}" />
+                    <Setter Property="Title" Value="{Binding DataContext.TitleExtra, RelativeSource={RelativeSource Self}, StringFormat={}FModel for Hogwarts Legacy {0}}" />
                 </DataTrigger>
             </Style.Triggers>
         </Style>

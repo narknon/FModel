@@ -85,11 +85,10 @@ public class Material : IDisposable
         else
         {
             {   // textures
-                Diffuse = FillTextures(options, uvCount, Parameters.HasTopDiffuse, CMaterialParams2.Diffuse, CMaterialParams2.FallbackDiffuse, true, "VFX_T_Burnt_D");
-                Normals = FillTextures(options, uvCount, Parameters.HasTopNormals, CMaterialParams2.Normals, CMaterialParams2.FallbackNormals, exception : "VFX_T_Burnt_N");
-                SpecularMasks = FillTextures(options, uvCount, Parameters.HasTopSpecularMasks, CMaterialParams2.SpecularMasks, CMaterialParams2.FallbackSpecularMasks);
-                Emissive = FillTextures(options, uvCount, true, CMaterialParams2.Emissive, CMaterialParams2.FallbackEmissive, exception : "VFX_T_Burnt_E");
-                //if (Emissive[0] != null && Emissive[0].Name.Equals("VFX_T_Burnt_E")) Emissive[0] = new Texture(new FLinearColor());
+                Diffuse = FillTextures(options, uvCount, Parameters.HasTopDiffuse, CMaterialParams2.Diffuse, CMaterialParams2.FallbackDiffuse, true, "VFX");
+                Normals = FillTextures(options, uvCount, Parameters.HasTopNormals, CMaterialParams2.Normals, CMaterialParams2.FallbackNormals, exception : "VFX");
+                SpecularMasks = FillTextures(options, uvCount, Parameters.HasTopSpecularMasks, CMaterialParams2.SpecularMasks, CMaterialParams2.FallbackSpecularMasks, exception : "VFX");
+                Emissive = FillTextures(options, uvCount, true, CMaterialParams2.Emissive, CMaterialParams2.FallbackEmissive, exception : "VFX");
 
             }
 
